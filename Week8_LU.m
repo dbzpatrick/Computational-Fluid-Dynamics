@@ -3,13 +3,13 @@ clear
 close all
 
 % Initialisation
-% A0=[3 2 1
-%     6 2 3
-%    -3 -3 8.5];
-% 
-% N=size(A0,1);
-N=10;
-A0 = rand(N,N);
+A0=[3 2 1
+    6 2 3
+   -3 -3 8.5];
+
+N=size(A0,1);
+% N=10;
+% A0 = rand(N,N);
 
 % Lp matrix starts with an identity matrix. Initialize the U matrix (which
 % is redundant).
