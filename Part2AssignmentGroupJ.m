@@ -226,3 +226,37 @@ end
 
 %% (d)
 % different initial guess for SOR
+% initial guess 1
+u01 = rand(N,1);
+u02 = C*cos(2*pi*(2*X+Y)); u02 = reshape(u02', [], 1);
+u03 = zeros(N,1); u03(:,1) = 1; u03 = reshape(u03', [], 1);
+% omega
+omega = 1.5;
+Asor = A;
+% SOR method with different initial guesses
+for u0 = {u01, u02, u03}
+    u0_sor = u0;
+
+    % extract the lower triangular entries from A to form a lower triangular matrix
+    L = tril(Asor,-1);
+    D=diag(diag(Asor));   % get the diagonal part of A
+    U=Asor-L-D;           % get the remaining part of A
+    k=0;               % k is the iteration number, starting from 0
+    resarray=[];       % record the residual
+    while 1
+        u1=(D+omega*L)\(omega*b-(omega*U+(omega-1)*D)*u0_sor);  % SOR method
+        res=norm(u0_sor-u1);            % calculate the norm
+        resarray=[resarray res];    % record the residual
+        if res<10^-7              % exiting condition
+            break
+        end
+        u0_sor=u1;                      % update u0 with u1
+        k=k+1;                      % iteration number adds one
+    end
+    semilogy(0:k,resarray,'-*b')
+    set(gca,'FontSize',10)
+    ylabel('Residual')
+    xlabel('Iteration')
+    title('Residual vs iteration number (SOR method)')
+    hold on
+end
