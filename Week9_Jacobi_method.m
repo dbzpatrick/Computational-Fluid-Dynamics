@@ -16,10 +16,13 @@ R = A - D;            % get the remaining part of A
 
 k=0;                  % initialise iteration number
 resarray = [];        % initialise the array to record the residual
-
+disp(R*u0)
+disp(D\(b-R*u0))
+%%
 while 1
     
     u1 = D\(b-R*u0);                  % Jacobi method
+    disp(u1)
     
     residual = norm(u1-u0);   % norm(b-A*u0)        % calculate the norm
     resarray = [resarray residual];   % record the residual

@@ -6,39 +6,90 @@
 
 
 %% (a)
+
 % C value
 C = mean([26,025,024]);
-% initialize
-Nx = 60; Ny = 50;
+Nx = 60; Ny =50;
 Lx = 1; Ly = 1;
+% initialize
+I = Nx-1;
+J = Ny-1;
+IJ = I*J;
+A = zeros(IJ);
 dx = Lx/Nx; dy = Ly/Ny;
-temp = 16*dx^2;
-Gamma = temp/(9*dy^2); D = -2*(Gamma+1);
-% empty grid
-x = dx:dx:dx*(Nx-1);
-y = dy:dy:dy*(Ny-1);
-% form matrix A
-aux1 = toeplitz([D 1 zeros(1,Nx-3)],[D 1 zeros(1,Nx-3)]');
-aux2 = Gamma^2*eye(Nx-1);
-A=[aux1 aux2 zeros(Nx-1,(Ny-3)*(Nx-1))];
-for i=1:Ny-3
-    A = [A
-         zeros(Nx-1,(i-1)*(Nx-1)) aux2 aux1 aux2 zeros(Nx-1,(Ny-i-3)*(Nx-1))];
+gamma = (4/3)*(dx/dy);
+D = -2*(gamma^2+1);
+% fill in D
+i = IJ;
+for j = IJ:-1:1
+    A(j,i) = D;
+    i = i-1;
 end
-A=[A
-   zeros(Nx-1,(Ny-3)*(Nx-1))  aux2 aux1];
-A = sparse(A);
-% Form the vector b in Au=b
-[X, Y] = meshgrid(x, y);
-g = -C*(13/9)*(pi^2)*cos(2*pi*(2*X + Y));
-g_vec = reshape(g', [], 1);
-b = temp * g_vec;
-% Boundary conditions for b 
-bc=reshape([zeros(Nx-2,Ny-1);2*ones(1,Ny-1)],[],1);
-b=b-bc;
+% fill in gamma
+i =IJ-Nx+1;
+for j = IJ:-1:1
+    A(j,i) = gamma^2;
+    i = i-1;
+    if i*j == 0
+        break
+    end
+end
+i =IJ;
+for j = IJ-Nx+1:-1:1
+    A(j,i) = gamma^2;
+    i = i-1;
+    if i*j == 0
+        break
+    end
+end
+% fill in 1
+for i = 1:IJ-1
+    if i/I == floor(i/I)
+        A(i,i+1) =0;
+        A(i+1,i) =0;
+    else 
+        A(i,i+1) =1;
+        A(i+1,i) =1;
+    end
+end
+% find b
+% boundary values
+B = zeros(Ny+1,Nx+1);
+for i = 1:Nx+1
+    x = (i-1)*dx;
+    y = (i-1)*dy;
+    B(end,i) = 0; %bottom
+    B(1,i) = 0; %top
+    B(i,1) = 0; %left
+    B(i,end) = 0; %right
+end
+% g values and finalize b
+idx = 0;
+for j = Ny:-1:2
+    for i =2:Nx     
+        idx = idx+1;
+        b(idx,1) = B(j-1,i)+B(j,i-1)+B(j,i)+B(j+1,i)+B(j,i+1);
+        x = (i-1)*dx;
+        y = (Ny-j+1)*dy;
+        g = -C*(13/9)*pi^2*cos(2*pi*(2*x+y));
+        b(idx,1) = 16*g*dx^2 -b(idx,1);
+    end
+end    
 % Solve the linear problem Au=b 
+A = sparse(A);
 u_linear = A\b; 
 N = size(A,1);
+% linear solution plotting
+u2D = reshape(u_linear,Nx-1,Ny-1);
+u2D = [zeros(Nx-1,1) u2D zeros(Nx-1,1) ];
+u2D= [zeros(1,Ny+1);u2D;2*ones(1,Ny+1) ];
+figure
+nexttile
+surf(0:dx:dx*Nx,0:dy:dy*Ny,u2D')
+xlabel('x');ylabel('y');zlabel('u')
+title(['Solution to Au=b with linear method'])
+set(gca,'FontSize',15)
+xlim([0 1]);ylim([0 1])
 
 %% (b) 
 % LU decomposition to solve for u
@@ -92,6 +143,7 @@ y_qr=Q'*b;
 ut_qr=R\y_qr;
 
 %% plotting
+
 % LU decomposition solution
 u2D_lu = reshape(ut_lu,Nx-1,Ny-1);
 u2D_lu = [zeros(Nx-1,1) u2D_lu zeros(Nx-1,1) ];
@@ -118,6 +170,7 @@ xlim([0 1]);ylim([0 1])
 
 %% (c)
 random = rand(N,1);
+
 % Jacobi method
 Ajac = A;
 u0_jac = random;   % random kick start vector
@@ -126,7 +179,7 @@ R = Ajac - D;            % get the remaining part of A
 k=0;                  % initialise iteration number
 resarray = [];        % initialise the array to record the residual
 while 1    
-    u1 = D\(b-R*u0_jac);                  % Jacobi method    
+    u1 = D\(b-R*u0_jac);                  % Jacobi method  
     residual = norm(u1-u0_jac);   % norm(b-A*u0)        % calculate the norm
     resarray = [resarray residual];   % record the residual    
     if residual < 10^-7            % exiting condition
@@ -134,10 +187,13 @@ while 1
     end    
     u0_jac = u1;                          
     k = k+1;                          % iteration number adds one
+    if k >50
+        break
+    end
 end
 figure
 nexttile
-semilogy(0:k,resarray,'-*b')
+semilogy(1:k,resarray,'-*b')
 set(gca,'FontSize',10)
 ylabel('Residual')
 xlabel('Iteration')
@@ -226,17 +282,20 @@ end
 
 %% (d)
 % different initial guess for SOR
+% empty grid
+x = dx:dx:dx*(Nx-1);
+y = dy:dy:dy*(Ny-1);
+[X, Y] = meshgrid(x, y);
 % initial guess 1
-u01 = rand(N,1);
+u01 = ones(N,1);
 u02 = C*cos(2*pi*(2*X+Y)); u02 = reshape(u02', [], 1);
-u03 = zeros(N,1); u03(:,1) = 1; u03 = reshape(u03', [], 1);
+u03 = 100*ones(N,1); 
 % omega
 omega = 1.5;
 Asor = A;
+figure
 % SOR method with different initial guesses
-for u0 = {u01, u02, u03}
-    u0_sor = u0;
-
+for u0_sor = [u01,u02,u03]
     % extract the lower triangular entries from A to form a lower triangular matrix
     L = tril(Asor,-1);
     D=diag(diag(Asor));   % get the diagonal part of A
@@ -253,10 +312,92 @@ for u0 = {u01, u02, u03}
         u0_sor=u1;                      % update u0 with u1
         k=k+1;                      % iteration number adds one
     end
-    semilogy(0:k,resarray,'-*b')
+    semilogy(0:k,resarray)
     set(gca,'FontSize',10)
     ylabel('Residual')
     xlabel('Iteration')
-    title('Residual vs iteration number (SOR method)')
+    title('Residual vs iteration number (different SOR initial guess)')
     hold on
 end
+legend('u01: vector of ones', 'u02: u = C cos(2pi(2x+y))','u03: constant vector of 100')
+
+%% (e) change boundary conditions
+
+% set up
+Lx = 1; Ly = 1;
+C = mean([26,025,024]);
+
+% QR with different N
+Nygrid = linspace(10,40,4);
+RL2 = zeros(length(Nygrid),1);
+h = zeros(length(Nygrid),1);
+for i = 1:length(Nygrid)
+    % initialize
+    Ny = Nygrid(i);
+    Nx = Ny+10;
+    dx = Lx/Nx;
+    dy = Ly/Ny;
+    [A,b] = findAbNew(Nx,Ny);
+    Aqr = A;
+
+    %
+    % find solution from QR    
+    N = size(A,1);    
+    Q = zeros(N,N);
+    % v1=u1
+    Q(:,1)=Aqr(:,1);
+    Q(:,1) = Q(:,1) /   sqrt( Q(:,1)'*Q(:,1) );
+    for j=2:N
+        Proj=zeros(N,1);
+        % to get vj, you first do projection of uj on v1--v_k---v_{j-1}
+        for k=1:j-1
+            Proj = Proj + ( Q(:,k)'*Aqr(:,j)  )/( Q(:,k)'*Q(:,k)   )*Q(:,k);
+        end
+        % and then subtract the projection from uj
+        Q(:,j)  =  Aqr(:,j)  - Proj;
+        % normalisation
+        Q(:,j) = Q(:,j) /   sqrt( Q(:,j)'*Q(:,j) );
+    end
+    R=zeros(N,N);
+    % get R
+    for j=1:N
+        % you do the projection of uj on e1,e2,...,e_j
+        for k=1:j
+            R(k,j) = Q(:,k)'*Aqr(:,j);
+        end
+    end
+    % solve
+    y_qr=Q'*b;
+    ut_qr=R\y_qr;
+    %
+
+    % find solution from analytical
+    idx = 0;
+    u_analytical = zeros((Nx-1)*(Ny-1),1);
+    for x = 1:Nx-1
+        x = x*dx;
+        for y = 1:Ny-1
+            idx = idx+1;
+            y = y*dx;
+            u_analytical(idx,1) = C*cos(2*pi*(2*x+y));
+            Dx = (1/idx)*dx;
+            Dy = (1/idx)*dy;
+        end
+    end
+
+    % find RL2
+    RL2(i,1) = sqrt(sum((ut_qr-u_analytical).^2)/(Nx*Ny));
+
+    % find h
+    h(i,1) = sqrt(dx*dy);
+end
+
+figure
+loglog(h,RL2,'-*y');    
+hold on 
+grid on
+xlabel('h')
+ylabel('RMS')
+title('2nd-order accuracy verification (RMS vs h)')
+loglog(h,100*h.^2,'-*r');
+legend('Numerical results','f = c*h^2')
