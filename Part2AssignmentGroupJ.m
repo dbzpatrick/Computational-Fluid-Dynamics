@@ -9,7 +9,7 @@
 
 % C value
 C = mean([26,025,024]);
-Nx = 6; Ny =5;
+Nx = 60; Ny =50;
 Lx = 1; Ly = 1;
 % initialize
 I = Nx-1;
@@ -76,7 +76,7 @@ for j = Ny:-1:2
     end
 end    
 % Solve the linear problem Au=b 
-% A = sparse(A);
+A = sparse(A);
 u_linear = A\b; 
 N = size(A,1);
 % linear solution plotting
@@ -187,13 +187,10 @@ while 1
     end    
     u0_jac = u1;                          
     k = k+1;                          % iteration number adds one
-    if k >50
-        break
-    end
 end
 figure
 nexttile
-semilogy(1:k,resarray,'-*b')
+semilogy(0:k,resarray,'-*b')
 set(gca,'FontSize',10)
 ylabel('Residual')
 xlabel('Iteration')
@@ -416,7 +413,7 @@ legend('Numerical results','f = c*h^2')
 
 %%
 %Order of Accuracy Proof
-Lgrid = 10:10:80; %Creating multiple grids
+Lgrid = 10:10:70; %Creating multiple grids
 error = zeros(length(Lgrid), 1); %Error array
 harray = zeros(length(Lgrid), 1); %dx array
 ei = 1; %Index for error list
@@ -481,7 +478,7 @@ for l=1:length(Lgrid) % M from 10 to 100 with a jump 10
     end
     %Calculating the error
     error(ei) = sqrt(sum((uQR2- u_ana).^2)/(Nx2*Ny2)); % RMS
-    harray(ei) = sqrt(dx_2*dy_2^2);
+    harray(ei) = sqrt(dx_2*dy_2);
     ei = ei + 1;
 end
 % plot for verifying the order of accuracy
