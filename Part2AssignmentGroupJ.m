@@ -9,7 +9,7 @@
 
 % C value
 C = mean([26,025,024]);
-Nx = 60; Ny =50;
+Nx = 6; Ny =5;
 Lx = 1; Ly = 1;
 % initialize
 I = Nx-1;
@@ -76,7 +76,7 @@ for j = Ny:-1:2
     end
 end    
 % Solve the linear problem Au=b 
-A = sparse(A);
+% A = sparse(A);
 u_linear = A\b; 
 N = size(A,1);
 % linear solution plotting
@@ -157,7 +157,7 @@ title(['Solution to Au=b with LU decompositions'])
 set(gca,'FontSize',15)
 xlim([0 1]);ylim([0 1])
 
-% QR decomposition solution
+%% QR decomposition solution
 u2D_qr = reshape(ut_qr,Nx-1,Ny-1);
 u2D_qr = [zeros(Nx-1,1) u2D_qr zeros(Nx-1,1) ];
 u2D_qr = [zeros(1,Ny+1);u2D_qr;2*ones(1,Ny+1) ];
@@ -337,7 +337,7 @@ for i = 1:length(Nygrid)
     Nx = Ny+10;
     dx = Lx/Nx;
     dy = Ly/Ny;
-    [A,b] = findAbNew(Nx,Ny);
+    [A,b] = findNewAb(Nx,Ny);
     Aqr = A;
 
     %
@@ -390,6 +390,19 @@ for i = 1:length(Nygrid)
 
     % find h
     h(i,1) = sqrt(dx*dy);
+
+    % plot
+    % QR decomposition solution
+    figure
+    u2D_qr = reshape(ut_qr,Nx-1,Ny-1);
+    u2D_qr = [zeros(Nx-1,1) u2D_qr zeros(Nx-1,1) ];
+    u2D_qr = [zeros(1,Ny+1);u2D_qr;2*ones(1,Ny+1) ];
+    nexttile
+    surf(0:dx:dx*Nx,0:dy:dy*Ny,u2D_qr')
+    xlabel('x');ylabel('y');zlabel('u')
+    title(['Solution to Au=b with QR decompositions'])
+    set(gca,'FontSize',15)
+    xlim([0 1]);ylim([0 1])
 end
 
 figure
