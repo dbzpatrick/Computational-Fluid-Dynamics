@@ -9,7 +9,7 @@
 
 % C value
 C = mean([26,025,024]);
-Nx = 60; Ny =50;
+Nx = 6; Ny =5;
 Lx = 1; Ly = 1;
 % initialize
 I = Nx-1;
@@ -76,7 +76,7 @@ for j = Ny:-1:2
     end
 end    
 % Solve the linear problem Au=b 
-A = sparse(A);
+% A = sparse(A);
 u_linear = A\b; 
 N = size(A,1);
 % linear solution plotting
@@ -157,7 +157,7 @@ title(['Solution to Au=b with LU decompositions'])
 set(gca,'FontSize',15)
 xlim([0 1]);ylim([0 1])
 
-% QR decomposition solution
+%% QR decomposition solution
 u2D_qr = reshape(ut_qr,Nx-1,Ny-1);
 u2D_qr = [zeros(Nx-1,1) u2D_qr zeros(Nx-1,1) ];
 u2D_qr = [zeros(1,Ny+1);u2D_qr;2*ones(1,Ny+1) ];
@@ -328,7 +328,7 @@ Lx = 1; Ly = 1;
 C = mean([26,025,024]);
 
 % QR with different N
-Nygrid = linspace(10,40,4);
+Nygrid = linspace(10,30,3);
 RL2 = zeros(length(Nygrid),1);
 h = zeros(length(Nygrid),1);
 for i = 1:length(Nygrid)
@@ -337,12 +337,11 @@ for i = 1:length(Nygrid)
     Nx = Ny+10;
     dx = Lx/Nx;
     dy = Ly/Ny;
-    [A,b] = findAbNew(Nx,Ny);
-    Aqr = A;
+    [Aqr,b] = findNewAb(Nx,Ny);
 
     %
     % find solution from QR    
-    N = size(A,1);    
+    N = size(Aqr,1);    
     Q = zeros(N,N);
     % v1=u1
     Q(:,1)=Aqr(:,1);
@@ -375,11 +374,11 @@ for i = 1:length(Nygrid)
     idx = 0;
     u_analytical = zeros((Nx-1)*(Ny-1),1);
     for x = 1:Nx-1
-        x = x*dx;
+        x1 = x*dx;
         for y = 1:Ny-1
             idx = idx+1;
-            y = y*dx;
-            u_analytical(idx,1) = C*cos(2*pi*(2*x+y));
+            y1 = y*dx;
+            u_analytical(idx,1) = C*cos(2*pi*(2*x1+y1));
             Dx = (1/idx)*dx;
             Dy = (1/idx)*dy;
         end
@@ -390,6 +389,19 @@ for i = 1:length(Nygrid)
 
     % find h
     h(i,1) = sqrt(dx*dy);
+
+    % plot
+    % QR decomposition solution
+    figure
+    u2D_qr = reshape(ut_qr,Nx-1,Ny-1);
+    u2D_qr = [zeros(Nx-1,1) u2D_qr zeros(Nx-1,1) ];
+    u2D_qr = [zeros(1,Ny+1);u2D_qr;2*ones(1,Ny+1) ];
+    nexttile
+    surf(0:dx:dx*Nx,0:dy:dy*Ny,u2D_qr')
+    xlabel('x');ylabel('y');zlabel('u')
+    title(['Solution to Au=b with QR decompositions'])
+    set(gca,'FontSize',15)
+    xlim([0 1]);ylim([0 1])
 end
 
 figure
@@ -401,3 +413,83 @@ ylabel('RMS')
 title('2nd-order accuracy verification (RMS vs h)')
 loglog(h,100*h.^2,'-*r');
 legend('Numerical results','f = c*h^2')
+
+%%
+%Order of Accuracy Proof
+Lgrid = 10:10:80; %Creating multiple grids
+error = zeros(length(Lgrid), 1); %Error array
+harray = zeros(length(Lgrid), 1); %dx array
+ei = 1; %Index for error list
+C = 25;
+%Creating the new grid
+for l=1:length(Lgrid) % M from 10 to 100 with a jump 10
+    Ny2 = Lgrid(l); %Extracting the size of grid
+    Nx2 = Ny2 + 10;
+    
+    Lx2 = 1; Ly2 = 1;
+    x2 = linspace(0, Lx2, Nx2+1); %The new column grids
+    y2 = linspace(0, Ly2, Ny2+1); %The new row grids
+    dx_2 = Lx2/Nx2; %New delta x
+    dy_2 = Ly2/Ny2; %New delta y
+    gamma2 = dx_2^2/dy_2^2;
+    
+    %Assembling the new A matrix
+    [A2, b2] = findNewAb(Nx2,Ny2);
+    
+    %Calculating the analytical solution using QR decomposition
+    % find solution from QR    
+    N = size(A2,1);    
+    Q = zeros(N,N);
+    % v1=u1
+    Q(:,1)=A2(:,1);
+    Q(:,1) = Q(:,1) /   sqrt( Q(:,1)'*Q(:,1) );
+    for j=2:N
+        Proj=zeros(N,1);
+        % to get vj, you first do projection of uj on v1--v_k---v_{j-1}
+        for k=1:j-1
+            Proj = Proj + ( Q(:,k)'*A2(:,j)  )/( Q(:,k)'*Q(:,k)   )*Q(:,k);
+        end
+        % and then subtract the projection from uj
+        Q(:,j)  =  A2(:,j)  - Proj;
+        % normalisation
+        Q(:,j) = Q(:,j) /   sqrt( Q(:,j)'*Q(:,j) );
+    end
+    R=zeros(N,N);
+    % get R
+    for j=1:N
+        % you do the projection of uj on e1,e2,...,e_j
+        for k=1:j
+            R(k,j) = Q(:,k)'*A2(:,j);
+        end
+    end
+    % solve
+    y_qr=Q'*b2;
+    uQR2=R\y_qr;
+
+
+    %Creating the analytical solution matrix
+    index2 = 1;
+    u_ana = zeros((Nx2-1)*(Ny2-1), 1); %(Nx2-1)*(Ny2-1) x 1 matrix
+    for j = 1:Ny2-1
+        for i = 1:Nx2-1
+            po2 = i + (j-1)*(Nx2-1);
+            bx = dx_2*i;
+            by = dy_2*j;
+            u2 = C * cos(2* pi * (2 * bx + by));
+            u_ana(po2) = u2;
+        end
+    end
+    %Calculating the error
+    error(ei) = sqrt(sum((uQR2- u_ana).^2)/(Nx2*Ny2)); % RMS
+    harray(ei) = sqrt(dx_2*dy_2^2);
+    ei = ei + 1;
+end
+% plot for verifying the order of accuracy
+set(0,'DefaultFigureWindowStyle','normal')
+figure(8)
+loglog(harray,error,'-*b') %Analytical results
+hold on
+loglog(harray, 2*50*harray.^2,'-r') %Numerical results
+legend('Numerical result','f = c dx^2','Location','northwest')
+xlabel('h');ylabel('RMS')
+set(gca,'FontSize',40)

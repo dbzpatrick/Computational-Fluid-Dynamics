@@ -50,13 +50,13 @@ function [A,b] = findAbNew(Nx,Ny)
     for i = 1:Ny+1
         x = (i-1)*dx;
         y = (i-1)*dy;
-        B(end,i) = C*cos(4*pi*y);
+        B(end,i) = C*cos(4*pi*y)*((4/3)*(gamma))^2;
     end
     % top
     for i = 1:Ny+1
         x = (i-1)*dx;
         y = (i-1)*dy;
-        B(1,i) = C*cos(4*pi*y);
+        B(1,i) = C*cos(4*pi*y)*((4/3)*(gamma))^2;
     end
     % left
     for i = 1:Ny+1
