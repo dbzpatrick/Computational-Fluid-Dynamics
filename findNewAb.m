@@ -6,7 +6,7 @@ gamma = (dx/dy)^2;
 A = zeros((Nx-1)*(Ny-1), (Nx-1)*(Ny-1));
 b = zeros((Nx-1)*(Ny-1), 1);
 dx2 = dx*dx;
-C= 28;
+C= 25;
 %Creating interior grids without boundary condition
 for j = 2:Ny-2 %y-grid
     for i = 2:Nx-2 %x-grid
