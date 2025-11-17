@@ -28,7 +28,7 @@ NMax=t_f/dt;
 
 % Assemble the A matrix to solve the Poisson equation Au=b
 gamma = dx^2/dy^2;
-A=Amatrix(Nx,Ny,dx^2,gamma);
+A=findAmatrix(Nx,Ny,dx^2,gamma);
 
 % initial condition for the vorticity
 vort = zeros(Nx-1,Ny-1);
@@ -43,6 +43,7 @@ timeC = [];
 
 % An array to record the kinetic energy at a certain point
 energyarray=[];
+figure
 
 % time evoluion
 for i=1:NMax
@@ -52,7 +53,6 @@ disp(['Finish the timestep ' num2str(i)])
 t=t+dt;
 
 % for plotting
-figure(1)
 subplot(1,2,1)
 [u,v]=get_uv(stmfunc,Nx,Ny,dx,dy);
 uC = [uC; u(ic,jc)];timeC = [timeC,t];
@@ -71,7 +71,9 @@ xlabel('time');ylabel('energy')
 end
 
 %% post-processing
-plot_results(stmfunc,vort,Nx,Ny,dx,dy,x,y,x2,y2)
+plotExplicit(stmfunc,vort,Nx,Ny,dx,dy,x,y)
+%%
+% plot velocity at C
 figure
 subplot(1,2,1)
 plot(timeC,uC,'-b','LineWidth',1.5)    
@@ -86,6 +88,7 @@ P2 = abs(Y/L);
 P1 = P2(1:(L+1)/2);
 P1(2:end) = 2*P1(2:end);
 ff = Fs*(0:(L-1)/2)/L;
+% plot amplitude
 subplot(1,2,2)
 plot(ff,P1,"-x") 
 title("Single-Sided Amplitude")
@@ -114,7 +117,7 @@ NMax=t_f/dtim;
 
 % Assemble the A matrix to solve the Poisson equation Au=b
 gamma = dx^2/dy^2;
-A=Amatrix(Nx,Ny,dx^2,gamma);
+A=findAmatrix(Nx,Ny,dx^2,gamma);
 
 % initial condition for the vorticity
 vort = zeros(Nx-1,Ny-1);
@@ -130,7 +133,7 @@ for i=1:NMax
 
 % solve possion eqn
 stmfunc = solve_Poisson(vort,A,Nx,Ny);                                                             
-[LHS,RHS] = assembleLHSRHS(Nx,Ny,stmfunc,vort,dx,dy,dt,Re,dtim);
+[LHS,RHS] = findImplicit(Nx,Ny,stmfunc,vort,dx,dy,dt,Re,dtim);
 LHS = sparse(LHS);RHS = sparse(RHS);
 u0 = zeros((Nx-1)*(Ny-1),1);
 resobj = 10^-4;

@@ -1,4 +1,4 @@
-function [LHS,RHS] = assembleLHSRHS(Nx, Ny, stmfunc,vort, dx, dy ,dt,Re, t)
+function [LHS,RHS] = findImplicit(Nx, Ny, stmfunc,vort, dx, dy ,dt,Re, t)
 
 U_south = 0;
 U_north = sin(2*pi*5*t);

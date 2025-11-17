@@ -1,6 +1,6 @@
-function [] = plot_results(stmfunc,vort,Nx,Ny,dx,dy,x,y,x2,y2)
+function [] = plotExplicit(stmfunc,vort,Nx,Ny,dx,dy,x,y)
 
-% plot the streamfunction with boundary conditions
+% streamfunction
 stmfunc=[0             zeros(1,Ny-1)   0
          zeros(Nx-1,1) stmfunc         zeros(Nx-1,1)
          0             zeros(1,Ny-1)   0 ];        
@@ -10,9 +10,9 @@ axis equal
 set(gca,'FontSize',10)
 title('Streamfunction at final time step with Explicit Method')
 
-% plot the vorticity  with boundary conditions
+% vorticity
 vortsouth=-2*stmfunc(2:end-1,2)/dy^2;
-vortnorth=-2*stmfunc(2:end-1,end-1)/dy^2-2*1/dy; % 1 in the last term means U_north=1
+vortnorth=-2*stmfunc(2:end-1,end-1)/dy^2-2*1/dy;
 vorteast =-2*stmfunc(end-1,2:end-1)/dx^2;
 vortwest =-2*stmfunc(2,2:end-1)/dx^2;
 
